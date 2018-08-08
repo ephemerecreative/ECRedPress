@@ -65,7 +65,12 @@ class ECRedPress
             'REDIS_PASSWORD'    => $redis['pass'],
             'CACHE_QUERY'       => getenv('ECRP_CACHE_QUERY') ?: 'false',
             'CURRENT_URL'       => $this->getCurrentUrl(),
-            'CACHEABLE_METHODS' => ['GET']
+            'CACHEABLE_METHODS' => ['GET'],
+            'CACHE_EXPIRATION'  => 60*60,
+            'NOCACHE_REGEX'     => [
+                '.*\/wp-admin\/.*',
+                '.*\/wp-login\.php$',
+            ]
         ], $this->customConfig, $override);
     }
 
@@ -106,6 +111,18 @@ class ECRedPress
     private function isCacheableMethod()
     {
         return in_array($_SERVER['REQUEST_METHOD'], $this->getConfig()['CACHEABLE_METHODS']);
+    }
+
+    public function isCacheableUrl()
+    {
+        $config = $this->getConfig();
+        print_r($config);
+        foreach ($config['NOCACHE_REGEX'] as $pattern){
+            if (preg_match("/$pattern/", $config['CURRENT_URL'])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -279,6 +296,11 @@ class ECRedPress
         ];
     }
 
+    /**
+     * Set the cache for a page.
+     * @param $content
+     * @param array $meta
+     */
     private function setCache($content, $meta = [])
     {
         $meta = array_merge([
