@@ -1,19 +1,20 @@
 {
-    "name": "ephemerecreative/ECRedPress",
-    "description": "Redis-based http cache, based off of work from Mark Hilton, Jeedo Aquino, and Jim Westergren.",
-    "require": {
-        "predis/predis": "^1.1"
-    },
-    "autoload": {
-        "psr-4": {
-            "ECRP\\Predis\\": "vendor/predis/"
-        }
-    },
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Raphael Titsworth-Morin",
-            "email": "raphael@ephemerecreative.ca"
-        }
-    ]
+  "name": "ephemerecreative/ECRedPress",
+  "description": "Redis-based http cache, based off of work from Mark Hilton, Jeedo Aquino, and Jim Westergren.",
+  "type": "wordpress-plugin",
+  "require": {
+    "predis/predis": "^1.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "ECRP\\Predis\\": "vendor/predis/"
+    }
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Raphael Titsworth-Morin",
+      "email": "raphael@ephemerecreative.ca"
+    }
+  ]
 }
