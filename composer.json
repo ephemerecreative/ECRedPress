@@ -1,0 +1,19 @@
+{
+    "name": "ephemerecreative/redis-http-cache",
+    "description": "Redis-based http cache, forked from the work of Mark Hilton.",
+    "require": {
+        "predis/predis": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "ECRP\\Predis\\": "vendor/predis/"
+        }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Raphael Titsworth-Morin",
+            "email": "raphael@ephemerecreative.ca"
+        }
+    ]
+}
