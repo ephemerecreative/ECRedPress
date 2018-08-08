@@ -1,6 +1,6 @@
 {
-    "name": "ephemerecreative/redis-http-cache",
-    "description": "Redis-based http cache, forked from the work of Mark Hilton.",
+    "name": "ephemerecreative/ECRedPress",
+    "description": "Redis-based http cache, based off of work from Mark Hilton, Jeedo Aquino, and Jim Westergren.",
     "require": {
         "predis/predis": "^1.1"
     },

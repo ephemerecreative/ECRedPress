@@ -349,6 +349,9 @@ class ECRedPress
      */
     public function startCache()
     {
+        if (defined(WP_CLI)) {
+            return;
+        }
         if ($this->shouldDeleteCache())
             $this->deleteCache();
 
@@ -365,6 +368,10 @@ class ECRedPress
      */
     public function endCache()
     {
+        if (defined(WP_CLI)) {
+            return;
+        }
+
         $html = ob_get_contents();
         ob_end_clean();
 
