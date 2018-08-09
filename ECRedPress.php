@@ -227,7 +227,7 @@ class ECRedPress
         $skip = ($nocacheSet or $this->isCommentSubmission());
         $skip = ($skip or !$this->isCacheableMethod());
         $skip = ($skip or $this->isLoggedIn());
-        $skip = ($skip or defined(DONOTCACHEPAGE));
+        $skip = ($skip or defined('DONOTCACHEPAGE'));
 
         return $skip;
     }
@@ -349,7 +349,7 @@ class ECRedPress
      */
     public function startCache()
     {
-        if (defined(WP_CLI)) {
+        if (defined('WP_CLI')) {
             return;
         }
         if ($this->shouldDeleteCache())
@@ -368,7 +368,7 @@ class ECRedPress
      */
     public function endCache()
     {
-        if (defined(WP_CLI)) {
+        if (defined('WP_CLI')) {
             return;
         }
 
