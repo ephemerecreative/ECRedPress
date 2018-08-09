@@ -6,9 +6,18 @@
  * @package WordPress
  */
 
+$redis_url = getenv('REDISCLOUD_URL');
+putenv("ECRP_REDIS_URL=$redis_url");
 require_once "./wp-content/plugins/ECRedPress/ECRedPress.php";
-$ecrp = ECRedPress::getEcrp();
-$ecrp->startCache();
+$ecrpLoaded = false;
+try {
+    $ecrp = ECRedPress::getEcrp();
+    $ecrp->startCache();
+    $ecrpLoaded = true;
+}
+catch (ECRedPressRedisParamsException $e){
+    error_log($e->getMessage());
+}
 /**
  * Tells WordPress to load the WordPress theme and output it.
  *
@@ -18,4 +27,13 @@ define('WP_USE_THEMES', true);
 
 /** Loads the WordPress Environment and Template */
 require( dirname( __FILE__ ) . '/wp-blog-header.php' );
-$ecrp->endCache();
+
+
+try {
+    if ($ecrpLoaded) {
+        $ecrp->endCache();
+    }
+}
+catch (ECRedPressRedisParamsException $e){
+    error_log($e->getMessage());
+}
