@@ -135,7 +135,6 @@ class ECRedPress
         if (isset($this->getConfig()['REDIS_PASSWORD']))
             $config['password'] = $this->getConfig()['REDIS_PASSWORD'];
 
-        error_log("Test Config\n" . print_r($config, true));
         $this->client = new Predis\Client($config);
     }
 
@@ -330,6 +329,19 @@ class ECRedPress
     }
 
     /**
+     * Set Ecrp-Cache header so we know what's going on with the cache.
+     * @param $status
+     * @param string $sub
+     */
+    private function setEcrpHeader($status, $sub='')
+    {
+        if($sub !== ''){
+            $sub = '-' . ucfirst($sub);
+        }
+        header("Ecrp-Cache$sub: $status");
+    }
+
+    /**
      * Get the cached version of the page.
      * @param null $url
      * @return string
@@ -403,6 +415,7 @@ class ECRedPress
      */
     public function deleteCache($url = null)
     {
+        $this->setEcrpHeader("Deleted", "Delete");
         $this->client->del([
             $this->getPageKey($url),
             $this->getStatusKey($url),
@@ -422,16 +435,13 @@ class ECRedPress
 
         $headers = $cache['headers'];
 
-        error_log(print_r($headers, true));
-
         if (is_array($headers)) {
             foreach ($cache['headers'] as $header) {
                 header($header);
             }
         }
 
-        header('Cache: HIT');
-        header('ECRP-Cache: Active');
+        $this->setEcrpHeader('Hit');
 
         exit($cache['page']);
     }
