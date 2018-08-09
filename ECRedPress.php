@@ -27,6 +27,11 @@ class ECRedPress
      */
     private static $instance = null;
 
+    /**
+     * ECRedPress constructor.
+     * @param $config
+     * @throws ECRedPressRedisParamsException
+     */
     private function __construct($config)
     {
         if ($config)
@@ -51,6 +56,7 @@ class ECRedPress
      * Gets the current EC RedPress instance or creates one.
      * @param array $customConfig
      * @return ECRedPress
+     * @throws ECRedPressRedisParamsException
      */
     public static function getEcrp($customConfig = null)
     {
@@ -63,7 +69,7 @@ class ECRedPress
 
     /**
      * Initialize ECRedPress instance.
-     * @param array $customConfig
+     * @throws ECRedPressRedisParamsException
      */
     private function init()
     {
@@ -93,15 +99,16 @@ class ECRedPress
     private function getConfig($override = [])
     {
         $redisUrl = getenv('ECRP_REDIS_URL');
+        $cacheExp = getenv('ECRP_DEFAULT_EXPIRATION');
         $redis = $redisUrl ? parse_url($redisUrl) : [];
         $config = array_merge([
             'REDIS_HOST' => isset($redis['host']) ? $redis['host'] : null,
             'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
             'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
-            'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') ?: 'false',
+            'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') == 'true',
             'CURRENT_URL' => $this->getCurrentUrl(),
             'CACHEABLE_METHODS' => $this->getCacheableMethodsFromEnv() ?: ['GET'],
-            'CACHE_EXPIRATION' => getenv('ECRP_DEFAULT_EXPIRATION') ?: (60 * 60),
+            'CACHE_EXPIRATION' => $cacheExp ? (int)($cacheExp) : (60 * 60),
             'NOCACHE_REGEX' => [
                 '.*\/wp-admin\/.*',
                 '.*\/wp-login\.php$',
@@ -268,7 +275,7 @@ class ECRedPress
      */
     private function getPageKey($url = null)
     {
-        return $this->getCacheKey('PAGE');
+        return $this->getCacheKey('PAGE', $url);
     }
 
     /**
@@ -278,7 +285,7 @@ class ECRedPress
      */
     private function shouldCacheQuery()
     {
-        return $this->getConfig()['CACHE_QUERY'] == 'true';
+        return $this->getConfig()['CACHE_QUERY'];
     }
 
     /**
