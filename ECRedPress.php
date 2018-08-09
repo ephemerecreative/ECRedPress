@@ -41,6 +41,7 @@ class ECRedPress
     public static function getEcrp($customConfig = [])
     {
         if (self::$instance != null) {
+            $this->customConfig = $customConfig;
             return self::$instance;
         } else {
             return new ECRedPress($customConfig);
