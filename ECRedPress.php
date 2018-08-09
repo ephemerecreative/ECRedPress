@@ -335,9 +335,16 @@ class ECRedPress
 
         http_response_code($cache['status']);
 
-        foreach ($cache['headers'] as $header) {
-            header($header);
+        $headers = $cache['headers'];
+
+        error_log(print_r($headers, true));
+
+        if (is_array($headers)) {
+            foreach ($cache['headers'] as $header) {
+                header($header);
+            }
         }
+
         header('Cache: HIT');
         header('ECRP-Cache: Active');
 
