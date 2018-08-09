@@ -482,6 +482,9 @@ class ECRedPress
                 'status' => http_response_code(),
                 'headers' => headers_list(),
             ]);
+        else {
+            $this->setEcrpHeader("Skipped");
+        }
 
         echo $html;
     }
