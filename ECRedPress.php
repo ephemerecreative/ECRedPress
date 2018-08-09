@@ -333,7 +333,7 @@ class ECRedPress
     {
         $cache = $this->getCache();
 
-        http_send_status($cache['status']);
+        http_response_code($cache['status']);
 
         foreach ($cache['headers'] as $header) {
             header($header);
