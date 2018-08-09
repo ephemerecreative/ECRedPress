@@ -60,14 +60,14 @@ class ECRedPress
     {
         $redis = parse_url(getenv('ECRP_REDIS_URL'));
         return array_merge([
-            'REDIS_HOST'        => $redis['host'],
-            'REDIS_PORT'        => $redis['port'],
-            'REDIS_PASSWORD'    => $redis['pass'],
-            'CACHE_QUERY'       => getenv('ECRP_CACHE_QUERY') ?: 'false',
-            'CURRENT_URL'       => $this->getCurrentUrl(),
+            'REDIS_HOST' => $redis['host'],
+            'REDIS_PORT' => $redis['port'],
+            'REDIS_PASSWORD' => $redis['pass'],
+            'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') ?: 'false',
+            'CURRENT_URL' => $this->getCurrentUrl(),
             'CACHEABLE_METHODS' => ['GET'],
-            'CACHE_EXPIRATION'  => 60*60,
-            'NOCACHE_REGEX'     => [
+            'CACHE_EXPIRATION' => 60 * 60,
+            'NOCACHE_REGEX' => [
                 '.*\/wp-admin\/.*',
                 '.*\/wp-login\.php$',
             ]
@@ -80,9 +80,9 @@ class ECRedPress
     private function initClient()
     {
         $this->client = new Predis\Client([
-            'host'      => $this->getConfig()['REDIS_HOST'],
-            'port'      => $this->getConfig()['REDIS_PORT'],
-            'password'  => $this->getConfig()['REDIS_PASSWORD'],
+            'host' => $this->getConfig()['REDIS_HOST'],
+            'port' => $this->getConfig()['REDIS_PORT'],
+            'password' => $this->getConfig()['REDIS_PASSWORD'],
         ]);
     }
 
@@ -93,6 +93,15 @@ class ECRedPress
     private function isLoggedIn()
     {
         return !!preg_match("/wordpress_logged_in/", var_export($_COOKIE, true));
+    }
+
+    /**
+     * Check if we're running from the CLI in which case, bypass the cache.
+     * @return bool
+     */
+    private function isCli()
+    {
+        return defined('WP_CLI');
     }
 
     /**
@@ -117,7 +126,7 @@ class ECRedPress
     {
         $config = $this->getConfig();
         print_r($config);
-        foreach ($config['NOCACHE_REGEX'] as $pattern){
+        foreach ($config['NOCACHE_REGEX'] as $pattern) {
             if (preg_match("/$pattern/", $config['CURRENT_URL'])) {
                 return false;
             }
@@ -228,6 +237,7 @@ class ECRedPress
         $skip = ($skip or !$this->isCacheableMethod());
         $skip = ($skip or $this->isLoggedIn());
         $skip = ($skip or defined('DONOTCACHEPAGE'));
+        $skip = ($skip or $this->isCli());
 
         return $skip;
     }
@@ -290,9 +300,9 @@ class ECRedPress
     private function getCache($url = null)
     {
         return [
-            'page'      => $this->getPageCache($url),
-            'status'    => $this->getStatusCache($url),
-            'headers'   => $this->getHeadersCache($url),
+            'page' => $this->getPageCache($url),
+            'status' => $this->getStatusCache($url),
+            'headers' => $this->getHeadersCache($url),
         ];
     }
 
@@ -304,9 +314,9 @@ class ECRedPress
     private function setCache($content, $meta = [])
     {
         $meta = array_merge([
-            'status'    => 200,
-            'headers'   => [],
-            'url'       => $this->getConfig()['CURRENT_URL'],
+            'status' => 200,
+            'headers' => [],
+            'url' => $this->getConfig()['CURRENT_URL'],
         ], $meta);
         $this->client->set($this->getPageKey($meta['url']), $content);
         $this->client->set($this->getStatusKey($meta['url']), $meta['status']);
@@ -356,14 +366,16 @@ class ECRedPress
      */
     public function startCache()
     {
-        if (defined('WP_CLI')) {
-            return;
-        }
         if ($this->shouldDeleteCache())
             $this->deleteCache();
 
         if ($this->doesPageCacheExist() && !$this->shouldSkipCache()) {
-            $this->renderFromCache();
+            try {
+                $this->renderFromCache();
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+                ob_start();
+            }
         } else {
             ob_start();
         }
@@ -375,17 +387,13 @@ class ECRedPress
      */
     public function endCache()
     {
-        if (defined('WP_CLI')) {
-            return;
-        }
-
         $html = ob_get_contents();
         ob_end_clean();
 
         if (!$this->shouldSkipCache())
             $this->setCache($html, [
-                'status'    => http_response_code(),
-                'headers'   => headers_list(),
+                'status' => http_response_code(),
+                'headers' => headers_list(),
             ]);
 
         echo $html;
