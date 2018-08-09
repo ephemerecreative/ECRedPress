@@ -1,4 +1,5 @@
 <?php
+require_once "../ECRedPressLogger.php";
 
 /**
  * Class ECRedPressHooks
@@ -17,6 +18,7 @@ class ECRedPressHooks {
     private function registerSavePost()
     {
         function ecrpSavePost($post_id){
+            ECRedPressLogger::getLogger()->plugin->info("About to delete post cache from save_post hook.");
             $ecrp = ECRedPress::getEcrp();
             $ecrp->deleteCache(get_permalink($post_id));
         }

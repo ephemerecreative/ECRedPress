@@ -11,6 +11,7 @@
  */
 require_once "vendor/autoload.php";
 require_once "ECRedPressException.php";
+require_once "ECRedPressLogger.php";
 
 class ECRedPress
 {
@@ -403,6 +404,9 @@ class ECRedPress
             'headers' => [],
             'url' => $this->getConfig()['CURRENT_URL'],
         ], $meta);
+
+        ECRedPressLogger::getLogger()->engine->info("About to set cache for ".$meta['url']);
+
         $this->client->set($this->getPageKey($meta['url']), $content);
         $this->client->set($this->getStatusKey($meta['url']), $meta['status']);
         $this->client->set($this->getHeadersKey($meta['url']), json_encode($meta['headers']));
@@ -415,6 +419,7 @@ class ECRedPress
      */
     public function deleteCache($url = null)
     {
+        ECRedPressLogger::getLogger()->engine->info("About to delete cache.");
         $this->setEcrpHeader("Deleted", "Delete");
         $this->client->del([
             $this->getPageKey($url),
@@ -429,6 +434,8 @@ class ECRedPress
      */
     private function renderFromCache()
     {
+        ECRedPressLogger::getLogger()->engine->info("About to fetch cache and render.");
+
         $cache = $this->getCache();
 
         http_response_code($cache['status']);

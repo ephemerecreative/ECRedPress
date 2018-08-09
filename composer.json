@@ -3,7 +3,8 @@
   "description": "Redis-based http cache, based off of work from Mark Hilton, Jeedo Aquino, and Jim Westergren.",
   "type": "wordpress-plugin",
   "require": {
-    "predis/predis": "^1.1"
+    "predis/predis": "^1.1",
+    "monolog/monolog": "^1.23"
   },
   "autoload": {
     "psr-4": {
