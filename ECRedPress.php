@@ -10,6 +10,7 @@
  *
  */
 require_once "vendor/autoload.php";
+require_once "ECRedPressException.php";
 
 class ECRedPress
 {
@@ -28,7 +29,7 @@ class ECRedPress
 
     private function __construct($config)
     {
-        if($config)
+        if ($config)
             $this->customConfig = $config;
         self::$instance = $this;
         $this->init();
@@ -41,7 +42,7 @@ class ECRedPress
      */
     private function getAndSetConfig($customConfig = null)
     {
-        if($customConfig !== null)
+        if ($customConfig !== null)
             $this->customConfig = $customConfig;
         return $this;
     }
@@ -69,34 +70,65 @@ class ECRedPress
         $this->initClient();
     }
 
+    /**
+     * Get array of comma-separated cacheable HTTP methods from ECRP_CACHEABLE_METHODS and return them as an array.
+     * @return array
+     */
+    private function getCacheableMethodsFromEnv()
+    {
+        $methods = getenv('ECRP_CACHEABLE_METHODS');
+        if (!$methods)
+            return [];
+        else
+            return array_map(function ($method) {
+                return trim(strtoupper($method));
+            }, explode(',', $methods));
+    }
+
+    /**
+     * @param array $override
+     * @return array
+     * @throws ECRedPressRedisParamsException
+     */
     private function getConfig($override = [])
     {
-        $redis = parse_url(getenv('ECRP_REDIS_URL'));
-        return array_merge([
-            'REDIS_HOST' => $redis['host'],
-            'REDIS_PORT' => $redis['port'],
-            'REDIS_PASSWORD' => $redis['pass'],
+        $redisUrl = getenv('ECRP_REDIS_URL');
+        $redis = $redisUrl ? parse_url($redisUrl) : [];
+        $config = array_merge([
+            'REDIS_HOST' => isset($redis['host']) ? $redis['host'] : null,
+            'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
+            'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
             'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') ?: 'false',
             'CURRENT_URL' => $this->getCurrentUrl(),
-            'CACHEABLE_METHODS' => ['GET'],
-            'CACHE_EXPIRATION' => 60 * 60,
+            'CACHEABLE_METHODS' => $this->getCacheableMethodsFromEnv() ?: ['GET'],
+            'CACHE_EXPIRATION' => getenv('ECRP_DEFAULT_EXPIRATION') ?: (60 * 60),
             'NOCACHE_REGEX' => [
                 '.*\/wp-admin\/.*',
                 '.*\/wp-login\.php$',
             ]
         ], $this->customConfig, $override);
+
+        if (!$config['REDIS_HOST'] || !$config['REDIS_PORT']) {
+            throw new ECRedPressRedisParamsException();
+        }
+
+        return $config;
     }
 
     /**
      * Initialize Predis client.
+     * @throws ECRedPressRedisParamsException
      */
     private function initClient()
     {
-        $this->client = new Predis\Client([
+        $config = [
             'host' => $this->getConfig()['REDIS_HOST'],
             'port' => $this->getConfig()['REDIS_PORT'],
-            'password' => $this->getConfig()['REDIS_PASSWORD'],
-        ]);
+        ];
+        if (isset($this->getConfig()['REDIS_PASSWORD'])) {
+            array_push($config, $this->getConfig()['REDIS_PASSWORD']);
+        }
+        $this->client = new Predis\Client($config);
     }
 
     /**
@@ -129,12 +161,18 @@ class ECRedPress
     /**
      * Check if the request method is of a type we want to cache.
      * @return bool
+     * @throws ECRedPressRedisParamsException
      */
     private function isCacheableMethod()
     {
         return in_array($_SERVER['REQUEST_METHOD'], $this->getConfig()['CACHEABLE_METHODS']);
     }
 
+    /**
+     * Checks if this url should be cached.
+     * @return bool
+     * @throws ECRedPressRedisParamsException
+     */
     public function isCacheableUrl()
     {
         $config = $this->getConfig();
@@ -151,6 +189,7 @@ class ECRedPress
      * Get the base key for a given url. Takes into account whether or not we are caching based on query string.
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getUrlKey($url = null)
     {
@@ -192,6 +231,7 @@ class ECRedPress
      * @param $sub
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getCacheKey($sub, $url = null)
     {
@@ -199,9 +239,10 @@ class ECRedPress
     }
 
     /**
-     * Return cache key for the url's status
+     * Return cache key for the url's status.
      * @param $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getStatusKey($url = null)
     {
@@ -209,9 +250,10 @@ class ECRedPress
     }
 
     /**
-     * Return cache key for the url's headers
+     * Return cache key for the url's headers.
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getHeadersKey($url = null)
     {
@@ -219,9 +261,10 @@ class ECRedPress
     }
 
     /**
-     * Return cache key for the url's page content
+     * Return cache key for the url's page content.
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getPageKey($url = null)
     {
@@ -231,6 +274,7 @@ class ECRedPress
     /**
      * Should we cache based on the query string.
      * @return bool
+     * @throws ECRedPressRedisParamsException
      */
     private function shouldCacheQuery()
     {
@@ -242,6 +286,7 @@ class ECRedPress
      * - NOCACHE GET var
      * - Cache Control max-age=0
      * @return bool
+     * @throws ECRedPressRedisParamsException
      */
     private function shouldSkipCache()
     {
@@ -257,6 +302,7 @@ class ECRedPress
 
     /**
      * Check if we should delete the cache.
+     * @return bool
      */
     private function shouldDeleteCache()
     {
@@ -268,6 +314,7 @@ class ECRedPress
     /**
      * Check if the page cache exists.
      * @return int
+     * @throws ECRedPressRedisParamsException
      */
     private function doesPageCacheExist()
     {
@@ -278,6 +325,7 @@ class ECRedPress
      * Get the cached version of the page.
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getPageCache($url = null)
     {
@@ -288,6 +336,7 @@ class ECRedPress
      * Get the cached version of the page's status.
      * @param null $url
      * @return string
+     * @throws ECRedPressRedisParamsException
      */
     private function getStatusCache($url = null)
     {
@@ -298,6 +347,7 @@ class ECRedPress
      * Get the cached page headers.
      * @param null $url
      * @return mixed
+     * @throws ECRedPressRedisParamsException
      */
     private function getHeadersCache($url = null)
     {
@@ -309,6 +359,7 @@ class ECRedPress
      * Get all cached data for a url.
      * @param null $url
      * @return array
+     * @throws ECRedPressRedisParamsException
      */
     private function getCache($url = null)
     {
@@ -323,6 +374,7 @@ class ECRedPress
      * Set the cache for a page.
      * @param $content
      * @param array $meta
+     * @throws ECRedPressRedisParamsException
      */
     private function setCache($content, $meta = [])
     {
@@ -339,6 +391,7 @@ class ECRedPress
     /**
      * Delete the cache for a given url.
      * @param null $url
+     * @throws ECRedPressRedisParamsException
      */
     public function deleteCache($url = null)
     {
@@ -351,6 +404,7 @@ class ECRedPress
 
     /**
      * Render the page for the current request from the cache.
+     * @throws ECRedPressRedisParamsException
      */
     private function renderFromCache()
     {
@@ -376,6 +430,7 @@ class ECRedPress
 
     /**
      * Start the caching engine (basically begin output buffering).
+     * @throws ECRedPressRedisParamsException
      */
     public function startCache()
     {
@@ -397,6 +452,7 @@ class ECRedPress
 
     /**
      * Complete output buffering and save the output to the cache.
+     * @throws ECRedPressRedisParamsException
      */
     public function endCache()
     {
