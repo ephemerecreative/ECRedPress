@@ -393,7 +393,7 @@ class ECRedPress
         ], $meta);
         $this->client->set($this->getPageKey($meta['url']), $content);
         $this->client->set($this->getStatusKey($meta['url']), $meta['status']);
-        $this->client->set($this->getHeadersKey($meta['url']), $meta['headers']);
+        $this->client->set($this->getHeadersKey($meta['url']), json_encode($meta['headers']));
     }
 
     /**

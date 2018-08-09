@@ -26,12 +26,28 @@ As of 2018-08-09, you'll need to install by adding the contents of this project 
 
 If you want to tweak things in code, you'll need to interact with the engine. The only way to access the caching engine is to load it using `ECRedPress::getEcrp`. If the engine has already been initialized, you will get the existing instance, otherwise it will be initialized and then returned. If you are loading the engine for the first time (usually in the WP index.php file), you can pass an array with custom configuration options, including options for the Redis client which will override configuration from Environment Variables. Once the engine is initialized, you will not be able to change the Redis client's configuration, but you will be able to change any other configuration options by passing a custom config array to `ECRedPress::getEcrp`. The full custom config options are listed below:
 
-- `REDIS_HOST` (*String*) The Redis instance's host. No support for clusters yet. Only available the first time `getEcrp` is called.
-- `REDIS_PORT` (*String*) The Redis instance's port. Only available the first time `getEcrp` is called.
-- `REDIS_PASSWORD` (*String*) Only available the first time `getEcrp` is called.
-- `CACHE_QUERY` (*Bool*) Determines whether or not to cache urls with different query strings separately. Default is false.
-- `CURRENT_URL` (*String*) By default, this is loaded from the request. If, however, you need to interact with the engine as if it were loaded from a url that it isn't actually loaded from, then you can use this to tell the engine which url it should "pretend" to work from.
-- `CACHEABLE_METHODS` (*String Array*) An array of string with HTTP methods, like GET or POST, which should be cached. Default is just GET.
-- `CACHE_EXPIRATION` (*Int*) An integer specifying how long a page should remain in the cache. Default is one hour.
-- `NOCACHE_REGEX` (*String Array*) An array with regular expressions applied to urls that should _not_ be cached.
+- `REDIS_HOST` 
+    - *String*
+    - The Redis instance's host. No support for clusters yet. Only available the first time `getEcrp` is called.
+- `REDIS_PORT` 
+    - *String*
+    - The Redis instance's port. Only available the first time `getEcrp` is called.
+- `REDIS_PASSWORD`
+    - *String*
+    - Only available the first time `getEcrp` is called.
+- `CACHE_QUERY` 
+    - *Bool*
+    - Determines whether or not to cache urls with different query strings separately. Default is false.
+- `CURRENT_URL` 
+    - *String*
+    - By default, this is loaded from the request. If, however, you need to interact with the engine as if it were loaded from a url that it isn't actually loaded from, then you can use this to tell the engine which url it should "pretend" to work from.
+- `CACHEABLE_METHODS` 
+    - *String Array*
+    - An array of string with HTTP methods, like GET or POST, which should be cached. Default is just GET.
+- `CACHE_EXPIRATION` 
+    - *Int*
+    - An integer specifying how long a page should remain in the cache. Default is one hour.
+- `NOCACHE_REGEX` 
+    - *String Array*
+    - An array with regular expressions applied to urls that should _not_ be cached.
  
