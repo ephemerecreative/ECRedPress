@@ -132,9 +132,9 @@ class ECRedPress
             'host' => $this->getConfig()['REDIS_HOST'],
             'port' => $this->getConfig()['REDIS_PORT'],
         ];
-        if (isset($this->getConfig()['REDIS_PASSWORD'])) {
-            array_push($config, $this->getConfig()['REDIS_PASSWORD']);
-        }
+        if (isset($this->getConfig()['REDIS_PASSWORD']))
+            $config['password'] = $this->getConfig()['REDIS_PASSWORD'];
+
         error_log("Test Config\n" . print_r($config, true));
         $this->client = new Predis\Client($config);
     }
