@@ -26,11 +26,22 @@ class ECRedPress
      */
     private static $instance = null;
 
-    public function __construct($config)
+    private function __construct($config)
     {
         $this->customConfig = $config;
         self::$instance = $this;
         $this->init();
+    }
+
+    /**
+     * Return this and set config.
+     * @param array $customConfig
+     * @return $this
+     */
+    private function getAndSetConfig($customConfig = [])
+    {
+        $this->customConfig = $customConfig;
+        return $this;
     }
 
     /**
@@ -41,8 +52,7 @@ class ECRedPress
     public static function getEcrp($customConfig = [])
     {
         if (self::$instance != null) {
-            $this->customConfig = $customConfig;
-            return self::$instance;
+            return self::$instance->getAndSetConfig($customConfig);
         } else {
             return new ECRedPress($customConfig);
         }
