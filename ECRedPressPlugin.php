@@ -5,6 +5,7 @@ Plugin URI: https://ephemerecreative.ca
 Description: Redis-based WordPress caching plugin.
 Author: Raphaël Titsworth-Morin
 Version: 0.1.0
+Network: True
 Author URI: http://ephemerecreative.ca
 License: GPL-2.0-or-later
 
@@ -26,8 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-require_once "./plugin/ECRedPressHooks.php";
-require_once "./plugin/ECRedPressAdmin.php";
+require_once "plugin/ECRedPressHooks.php";
+require_once "plugin/ECRedPressAdmin.php";
 
 /**
  * @property ECRedPressHooks hookManager
