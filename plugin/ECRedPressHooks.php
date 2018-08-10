@@ -20,9 +20,9 @@ class ECRedPressHooks {
         function ecrpSavePost($post_id){
             ECRedPressLogger::getLogger()->plugin->info("About to delete post cache from save_post hook.");
             $ecrp = ECRedPress::getEcrp();
-//            $ecrp->deleteCache(get_permalink($post_id));
+            $ecrp->deleteCache(get_permalink($post_id));
         }
 
-//        add_action( 'save_post', 'ecrpSavePost' );
+        add_action( 'save_post', 'ecrpSavePost' );
     }
 }
