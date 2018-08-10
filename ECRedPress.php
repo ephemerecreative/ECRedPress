@@ -1,4 +1,8 @@
 <?php
+require_once "vendor/autoload.php";
+require_once "ECRedPressException.php";
+require_once "ECRedPressLogger.php";
+
 /**
  * Class ECRedPress
  * @author Raphael Titsworth-Morin
@@ -9,10 +13,6 @@
  * Re-structured from code and ideas from Jim Westergren, Jeedo Aquino, and Mark Hilton.
  *
  */
-require_once "vendor/autoload.php";
-require_once "ECRedPressException.php";
-require_once "ECRedPressLogger.php";
-
 class ECRedPress
 {
     /**

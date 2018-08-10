@@ -26,7 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-require_once "ECRedPress.php";
 require_once "./plugin/ECRedPressHooks.php";
 require_once "./plugin/ECRedPressAdmin.php";
 
