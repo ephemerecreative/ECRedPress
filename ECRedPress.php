@@ -1,7 +1,7 @@
 <?php
-require_once "vendor/autoload.php";
-require_once "ECRedPressException.php";
-require_once "ECRedPressLogger.php";
+require_once __DIR__."/vendor/autoload.php";
+require_once __DIR__."/ECRedPressException.php";
+require_once __DIR__."/ECRedPressLogger.php";
 
 /**
  * Class ECRedPress
