@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__."/../ECRedPressLogger.php";
+require_once __DIR__."/../ECRedPress.php";
 
 /**
  * Class ECRedPressHooks
