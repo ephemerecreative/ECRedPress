@@ -158,6 +158,15 @@ class ECRedPress
     }
 
     /**
+     * Is the cache enabled.
+     * @return array|false|string
+     */
+    private function isCacheEnabled()
+    {
+        return !!getenv('ECRP_ENABLED');
+    }
+
+    /**
      * Check if request is a comment submission.
      * @return bool
      */
@@ -459,6 +468,9 @@ class ECRedPress
      */
     public function startCache()
     {
+        if(!$this->isCacheEnabled())
+            return;
+
         if ($this->shouldDeleteCache())
             $this->deleteCache();
 
@@ -481,6 +493,9 @@ class ECRedPress
      */
     public function endCache()
     {
+        if(!$this->isCacheEnabled())
+            return;
+
         $html = ob_get_contents();
         ob_end_clean();
 
