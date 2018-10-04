@@ -308,11 +308,17 @@ class ECRedPress
     private function shouldSkipCache()
     {
         $nocacheSet = isset($_GET['NOCACHE']);
+        ECRedPressLogger::getLogger()->engine->info("NOCACHE get var: ".$nocacheSet);
         $skip = ($nocacheSet or $this->isCommentSubmission());
+        ECRedPressLogger::getLogger()->engine->info("Comment: ".$skip);
         $skip = ($skip or !$this->isCacheableMethod());
+        ECRedPressLogger::getLogger()->engine->info("Not cacheable method: ".$skip);
         $skip = ($skip or $this->isLoggedIn());
+        ECRedPressLogger::getLogger()->engine->info("Logged in: ".$skip);
         $skip = ($skip or defined('DONOTCACHEPAGE'));
+        ECRedPressLogger::getLogger()->engine->info("DONOTCACHEPAGE set: ".$skip);
         $skip = ($skip or $this->isCli());
+        ECRedPressLogger::getLogger()->engine->info("Is CLI: ".$skip);
 
         return $skip;
     }

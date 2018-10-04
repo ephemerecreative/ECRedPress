@@ -6,8 +6,10 @@
  * @package WordPress
  */
 
-$redis_url = getenv('REDISCLOUD_URL');
-putenv("ECRP_REDIS_URL=$redis_url");
+if(getenv('REDISCLOUD_URL')){
+    $redis_url = getenv('REDISCLOUD_URL');
+    putenv("ECRP_REDIS_URL=$redis_url");
+}
 require_once "./wp-content/plugins/ECRedPress/ECRedPress.php";
 $ecrpLoaded = false;
 try {
