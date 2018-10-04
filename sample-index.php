@@ -6,18 +6,17 @@
  * @package WordPress
  */
 
-if(getenv('REDISCLOUD_URL')){
+if (getenv('REDISCLOUD_URL')) {
     $redis_url = getenv('REDISCLOUD_URL');
     putenv("ECRP_REDIS_URL=$redis_url");
 }
-require_once "./wp-content/plugins/ECRedPress/ECRedPress.php";
+require_once __DIR__ . "/wp-content/plugins/ECRedPress/ECRedPress.php";
 $ecrpLoaded = false;
 try {
-    $ecrp = ECRedPress::getEcrp();
-    $ecrp->startCache();
+    $ecrp = ECRedPress::get_ecrp();
+    $ecrp->start_cache();
     $ecrpLoaded = true;
-}
-catch (ECRedPressRedisParamsException $e){
+} catch (ECRedPressRedisParamsException $e) {
     error_log($e->getMessage());
 }
 /**
@@ -28,14 +27,13 @@ catch (ECRedPressRedisParamsException $e){
 define('WP_USE_THEMES', true);
 
 /** Loads the WordPress Environment and Template */
-require( dirname( __FILE__ ) . '/wp-blog-header.php' );
+require(dirname(__FILE__) . '/wp-blog-header.php');
 
 
 try {
     if ($ecrpLoaded) {
-        $ecrp->endCache();
+        $ecrp->end_cache();
     }
-}
-catch (ECRedPressRedisParamsException $e){
+} catch (ECRedPressRedisParamsException $e) {
     error_log($e->getMessage());
 }

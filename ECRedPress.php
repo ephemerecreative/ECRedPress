@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__."/vendor/autoload.php";
-require_once __DIR__."/ECRedPressException.php";
-require_once __DIR__."/ECRedPressLogger.php";
+require_once __DIR__ . "/vendor/autoload.php";
+require_once __DIR__ . "/ECRedPressException.php";
+require_once __DIR__ . "/ECRedPressLogger.php";
 
 /**
  * Class ECRedPress
@@ -10,7 +10,7 @@ require_once __DIR__."/ECRedPressLogger.php";
  * @see https://gist.github.com/JimWestergren/3053250#file-index-with-redis-php
  * @see http://www.jeedo.net/lightning-fast-wordpress-with-nginx-redis/
  *
- * Re-structured from code and ideas from Jim Westergren, Jeedo Aquino, and Mark Hilton.
+ * Inspired by code and ideas from Jim Westergren, Jeedo Aquino, and Mark Hilton.
  *
  */
 class ECRedPress
@@ -46,11 +46,21 @@ class ECRedPress
      * @param array $customConfig
      * @return $this
      */
-    private function getAndSetConfig($customConfig = null)
+    private function get_and_set_config($customConfig = null)
     {
         if ($customConfig !== null)
             $this->customConfig = $customConfig;
         return $this;
+    }
+
+    /**
+     * Return the config object.
+     * @return array
+     * @throws ECRedPressRedisParamsException
+     */
+    public function public_config()
+    {
+        return $this->get_config();
     }
 
     /**
@@ -59,10 +69,10 @@ class ECRedPress
      * @return ECRedPress
      * @throws ECRedPressRedisParamsException
      */
-    public static function getEcrp($customConfig = null)
+    public static function get_ecrp($customConfig = null)
     {
         if (self::$instance != null) {
-            return self::$instance->getAndSetConfig($customConfig);
+            return self::$instance->get_and_set_config($customConfig);
         } else {
             return new ECRedPress($customConfig);
         }
@@ -74,14 +84,14 @@ class ECRedPress
      */
     private function init()
     {
-        $this->initClient();
+        $this->init_client();
     }
 
     /**
      * Get array of comma-separated cacheable HTTP methods from ECRP_CACHEABLE_METHODS and return them as an array.
      * @return array
      */
-    private function getCacheableMethodsFromEnv()
+    private function get_cacheable_methods_from_env()
     {
         $methods = getenv('ECRP_CACHEABLE_METHODS');
         if (!$methods)
@@ -97,7 +107,7 @@ class ECRedPress
      * @return array
      * @throws ECRedPressRedisParamsException
      */
-    private function getConfig($override = [])
+    private function get_config($override = [])
     {
         $redisUrl = getenv('ECRP_REDIS_URL');
         $cacheExp = getenv('ECRP_DEFAULT_EXPIRATION');
@@ -107,8 +117,8 @@ class ECRedPress
             'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
             'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
             'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') == 'true',
-            'CURRENT_URL' => $this->getCurrentUrl(),
-            'CACHEABLE_METHODS' => $this->getCacheableMethodsFromEnv() ?: ['GET'],
+            'CURRENT_URL' => $this->get_current_url(),
+            'CACHEABLE_METHODS' => $this->get_cacheable_methods_from_env() ?: ['GET'],
             'CACHE_EXPIRATION' => $cacheExp ? (int)($cacheExp) : (60 * 60),
             'NOCACHE_REGEX' => [
                 '.*\/wp-admin\/.*',
@@ -127,14 +137,14 @@ class ECRedPress
      * Initialize Predis client.
      * @throws ECRedPressRedisParamsException
      */
-    private function initClient()
+    private function init_client()
     {
         $config = [
-            'host' => $this->getConfig()['REDIS_HOST'],
-            'port' => $this->getConfig()['REDIS_PORT'],
+            'host' => $this->get_config()['REDIS_HOST'],
+            'port' => $this->get_config()['REDIS_PORT'],
         ];
-        if (isset($this->getConfig()['REDIS_PASSWORD']))
-            $config['password'] = $this->getConfig()['REDIS_PASSWORD'];
+        if (isset($this->get_config()['REDIS_PASSWORD']))
+            $config['password'] = $this->get_config()['REDIS_PASSWORD'];
 
         $this->client = new Predis\Client($config);
     }
@@ -143,7 +153,7 @@ class ECRedPress
      * Check if we are logged in.
      * @return bool
      */
-    private function isLoggedIn()
+    private function is_logged_in()
     {
         return !!preg_match("/wordpress_logged_in/", var_export($_COOKIE, true));
     }
@@ -152,7 +162,7 @@ class ECRedPress
      * Check if we're running from the CLI in which case, bypass the cache.
      * @return bool
      */
-    private function isCli()
+    private function is_cli()
     {
         return defined('WP_CLI');
     }
@@ -161,7 +171,7 @@ class ECRedPress
      * Is the cache enabled.
      * @return array|false|string
      */
-    private function isCacheEnabled()
+    private function is_cache_enabled()
     {
         return !!getenv('ECRP_ENABLED');
     }
@@ -170,7 +180,7 @@ class ECRedPress
      * Check if request is a comment submission.
      * @return bool
      */
-    private function isCommentSubmission()
+    private function is_comment_submission()
     {
         return (isset($_SERVER['HTTP_CACHE_CONTROL']) && $_SERVER['HTTP_CACHE_CONTROL'] == 'max-age=0');
     }
@@ -180,9 +190,9 @@ class ECRedPress
      * @return bool
      * @throws ECRedPressRedisParamsException
      */
-    private function isCacheableMethod()
+    private function is_cacheable_method()
     {
-        return in_array($_SERVER['REQUEST_METHOD'], $this->getConfig()['CACHEABLE_METHODS']);
+        return in_array($_SERVER['REQUEST_METHOD'], $this->get_config()['CACHEABLE_METHODS']);
     }
 
     /**
@@ -190,9 +200,9 @@ class ECRedPress
      * @return bool
      * @throws ECRedPressRedisParamsException
      */
-    public function isCacheableUrl()
+    public function is_cacheable_url()
     {
-        $config = $this->getConfig();
+        $config = $this->get_config();
         print_r($config);
         foreach ($config['NOCACHE_REGEX'] as $pattern) {
             if (preg_match("/$pattern/", $config['CURRENT_URL'])) {
@@ -208,12 +218,12 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getUrlKey($url = null)
+    private function get_url_key($url = null)
     {
         if (!$url) {
-            $url = $this->getConfig()['CURRENT_URL'];
+            $url = $this->get_config()['CURRENT_URL'];
         }
-        $url = $this->shouldCacheQuery() ? strtok($url, '?') : $url;
+        $url = $this->should_cache_query() ? strtok($url, '?') : $url;
         return md5($url);
     }
 
@@ -221,11 +231,11 @@ class ECRedPress
      * Builds the current url.
      * @return string
      */
-    private function getCurrentUrl()
+    private function get_current_url()
     {
         return sprintf(
             "%s://%s%s",
-            $this->getProtocol(),
+            $this->get_protocol(),
             $_SERVER['HTTP_HOST'],
             $_SERVER['REQUEST_URI']
         );
@@ -235,7 +245,7 @@ class ECRedPress
      * Returns the protocol, either through X_FORWARDED header if set, or HTTPS.
      * @return string
      */
-    private function getProtocol()
+    private function get_protocol()
     {
         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']))
             return $_SERVER['HTTP_X_FORWARDED_PROTO'];
@@ -250,9 +260,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getCacheKey($sub, $url = null)
+    private function get_cache_key($sub, $url = null)
     {
-        return sprintf("%s-%s", $this->getUrlKey($url), $sub);
+        return sprintf("%s-%s", $this->get_url_key($url), $sub);
     }
 
     /**
@@ -261,9 +271,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getStatusKey($url = null)
+    private function get_status_key($url = null)
     {
-        return $this->getCacheKey('STATUS', $url);
+        return $this->get_cache_key('STATUS', $url);
     }
 
     /**
@@ -272,9 +282,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getHeadersKey($url = null)
+    private function get_headers_key($url = null)
     {
-        return $this->getCacheKey('HEADERS', $url);
+        return $this->get_cache_key('HEADERS', $url);
     }
 
     /**
@@ -283,9 +293,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getPageKey($url = null)
+    private function get_page_key($url = null)
     {
-        return $this->getCacheKey('PAGE', $url);
+        return $this->get_cache_key('PAGE', $url);
     }
 
     /**
@@ -293,9 +303,9 @@ class ECRedPress
      * @return bool
      * @throws ECRedPressRedisParamsException
      */
-    private function shouldCacheQuery()
+    private function should_cache_query()
     {
-        return $this->getConfig()['CACHE_QUERY'];
+        return $this->get_config()['CACHE_QUERY'];
     }
 
     /**
@@ -305,20 +315,20 @@ class ECRedPress
      * @return bool
      * @throws ECRedPressRedisParamsException
      */
-    private function shouldSkipCache()
+    private function should_skip_cache()
     {
         $nocacheSet = isset($_GET['NOCACHE']);
-        ECRedPressLogger::getLogger()->engine->info("NOCACHE get var: ".$nocacheSet);
-        $skip = ($nocacheSet or $this->isCommentSubmission());
-        ECRedPressLogger::getLogger()->engine->info("Comment: ".$skip);
-        $skip = ($skip or !$this->isCacheableMethod());
-        ECRedPressLogger::getLogger()->engine->info("Not cacheable method: ".$skip);
-        $skip = ($skip or $this->isLoggedIn());
-        ECRedPressLogger::getLogger()->engine->info("Logged in: ".$skip);
+        ECRedPressLogger::get_logger()->engine->info("NOCACHE get var: " . $nocacheSet);
+        $skip = ($nocacheSet or $this->is_comment_submission());
+        ECRedPressLogger::get_logger()->engine->info("Comment: " . $skip);
+        $skip = ($skip or !$this->is_cacheable_method());
+        ECRedPressLogger::get_logger()->engine->info("Not cacheable method: " . $skip);
+        $skip = ($skip or $this->is_logged_in());
+        ECRedPressLogger::get_logger()->engine->info("Logged in: " . $skip);
         $skip = ($skip or defined('DONOTCACHEPAGE'));
-        ECRedPressLogger::getLogger()->engine->info("DONOTCACHEPAGE set: ".$skip);
-        $skip = ($skip or $this->isCli());
-        ECRedPressLogger::getLogger()->engine->info("Is CLI: ".$skip);
+        ECRedPressLogger::get_logger()->engine->info("DONOTCACHEPAGE set: " . $skip);
+        $skip = ($skip or $this->is_cli());
+        ECRedPressLogger::get_logger()->engine->info("Is CLI: " . $skip);
 
         return $skip;
     }
@@ -327,10 +337,10 @@ class ECRedPress
      * Check if we should delete the cache.
      * @return bool
      */
-    private function shouldDeleteCache()
+    private function should_delete_cache()
     {
-        $queryDelete = ($this->isLoggedIn() && (isset($_GET['ecrpd']) && $_GET['ecrpd'] == 'true'));
-        $delete = $queryDelete or $this->isCommentSubmission();
+        $queryDelete = ($this->is_logged_in() && (isset($_GET['ecrpd']) && $_GET['ecrpd'] == 'true'));
+        $delete = $queryDelete or $this->is_comment_submission();
         return $delete;
     }
 
@@ -339,9 +349,9 @@ class ECRedPress
      * @return int
      * @throws ECRedPressRedisParamsException
      */
-    private function doesPageCacheExist()
+    private function does_page_cache_exist()
     {
-        return $this->client->exists($this->getPageKey());
+        return $this->client->exists($this->get_page_key());
     }
 
     /**
@@ -349,9 +359,12 @@ class ECRedPress
      * @param $status
      * @param string $sub
      */
-    private function setEcrpHeader($status, $sub='')
+    private function set_ecrp_header($status, $sub = '')
     {
-        if($sub !== ''){
+        if (headers_sent()) {
+            return;
+        }
+        if ($sub !== '') {
             $sub = '-' . ucfirst($sub);
         }
         header("Ecrp-Cache$sub: $status");
@@ -363,9 +376,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getPageCache($url = null)
+    private function get_page_cache($url = null)
     {
-        return $this->client->get($this->getPageKey($url));
+        return $this->client->get($this->get_page_key($url));
     }
 
     /**
@@ -374,9 +387,9 @@ class ECRedPress
      * @return string
      * @throws ECRedPressRedisParamsException
      */
-    private function getStatusCache($url = null)
+    private function get_status_cache($url = null)
     {
-        return $this->client->get($this->getStatusKey($url));
+        return $this->client->get($this->get_status_key($url));
     }
 
     /**
@@ -385,9 +398,9 @@ class ECRedPress
      * @return mixed
      * @throws ECRedPressRedisParamsException
      */
-    private function getHeadersCache($url = null)
+    private function get_headers_cache($url = null)
     {
-        $headerJSON = $this->client->get($this->getHeadersKey($url));
+        $headerJSON = $this->client->get($this->get_headers_key($url));
         return json_decode($headerJSON);
     }
 
@@ -397,12 +410,12 @@ class ECRedPress
      * @return array
      * @throws ECRedPressRedisParamsException
      */
-    private function getCache($url = null)
+    private function get_cache($url = null)
     {
         return [
-            'page' => $this->getPageCache($url),
-            'status' => $this->getStatusCache($url),
-            'headers' => $this->getHeadersCache($url),
+            'page' => $this->get_page_cache($url),
+            'status' => $this->get_status_cache($url),
+            'headers' => $this->get_headers_cache($url),
         ];
     }
 
@@ -412,19 +425,19 @@ class ECRedPress
      * @param array $meta
      * @throws ECRedPressRedisParamsException
      */
-    private function setCache($content, $meta = [])
+    private function set_cache($content, $meta = [])
     {
         $meta = array_merge([
             'status' => 200,
             'headers' => [],
-            'url' => $this->getConfig()['CURRENT_URL'],
+            'url' => $this->get_config()['CURRENT_URL'],
         ], $meta);
 
-        ECRedPressLogger::getLogger()->engine->info("About to set cache for ".$meta['url']);
+        ECRedPressLogger::get_logger()->engine->info("About to set cache for " . $meta['url']);
 
-        $this->client->set($this->getPageKey($meta['url']), $content);
-        $this->client->set($this->getStatusKey($meta['url']), $meta['status']);
-        $this->client->set($this->getHeadersKey($meta['url']), json_encode($meta['headers']));
+        $this->client->set($this->get_page_key($meta['url']), $content);
+        $this->client->set($this->get_status_key($meta['url']), $meta['status']);
+        $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']));
     }
 
     /**
@@ -432,14 +445,15 @@ class ECRedPress
      * @param null $url
      * @throws ECRedPressRedisParamsException
      */
-    public function deleteCache($url = null)
+    public function delete_cache($url = null)
     {
-        ECRedPressLogger::getLogger()->engine->info("About to delete cache.");
-        $this->setEcrpHeader("Deleted", "Delete");
+        ECRedPressLogger::get_logger()->engine->info($url." has cache? ".(!!$this->get_page_cache($url)));
+        ECRedPressLogger::get_logger()->engine->info("About to delete cache: ".$url);
+        $this->set_ecrp_header("Deleted", "Delete");
         $this->client->del([
-            $this->getPageKey($url),
-            $this->getStatusKey($url),
-            $this->getHeadersKey($url),
+            $this->get_page_key($url),
+            $this->get_status_key($url),
+            $this->get_headers_key($url),
         ]);
     }
 
@@ -447,11 +461,11 @@ class ECRedPress
      * Render the page for the current request from the cache.
      * @throws ECRedPressRedisParamsException
      */
-    private function renderFromCache()
+    private function render_from_cache()
     {
-        ECRedPressLogger::getLogger()->engine->info("About to fetch cache and render.");
+        ECRedPressLogger::get_logger()->engine->info("About to fetch cache and render.");
 
-        $cache = $this->getCache();
+        $cache = $this->get_cache();
 
         http_response_code($cache['status']);
 
@@ -463,7 +477,7 @@ class ECRedPress
             }
         }
 
-        $this->setEcrpHeader('Hit');
+        $this->set_ecrp_header('Hit');
 
         exit($cache['page']);
     }
@@ -472,17 +486,17 @@ class ECRedPress
      * Start the caching engine (basically begin output buffering).
      * @throws ECRedPressRedisParamsException
      */
-    public function startCache()
+    public function start_cache()
     {
-        if(!$this->isCacheEnabled())
+        if (!$this->is_cache_enabled())
             return;
 
-        if ($this->shouldDeleteCache())
-            $this->deleteCache();
+        if ($this->should_delete_cache())
+            $this->delete_cache();
 
-        if ($this->doesPageCacheExist() && !$this->shouldSkipCache()) {
+        if ($this->does_page_cache_exist() && !$this->should_skip_cache()) {
             try {
-                $this->renderFromCache();
+                $this->render_from_cache();
             } catch (Exception $e) {
                 error_log($e->getMessage());
                 ob_start();
@@ -497,22 +511,21 @@ class ECRedPress
      * Complete output buffering and save the output to the cache.
      * @throws ECRedPressRedisParamsException
      */
-    public function endCache()
+    public function end_cache()
     {
-        if(!$this->isCacheEnabled())
+        if (!$this->is_cache_enabled())
             return;
 
         $html = ob_get_contents();
         ob_end_clean();
 
-        if (!$this->shouldSkipCache())
-            $this->setCache($html, [
+        if (!$this->should_skip_cache())
+            $this->set_cache($html, [
                 'status' => http_response_code(),
                 'headers' => headers_list(),
             ]);
-        else {
-            $this->setEcrpHeader("Skipped");
-        }
+        else
+            $this->set_ecrp_header("Skipped");
 
         echo $html;
     }

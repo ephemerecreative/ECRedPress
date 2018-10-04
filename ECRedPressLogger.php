@@ -16,11 +16,11 @@ class ECRedPressLogger {
         $this->plugin = new Logger('ECRPPlugin');
     }
 
-    public static function getLogger()
+    public static function get_logger()
     {
         return self::$instance ? self::$instance : new ECRedPressLogger();
     }
 }
 
-$ecrpLogger = ECRedPressLogger::getLogger();
+$ecrpLogger = ECRedPressLogger::get_logger();
 

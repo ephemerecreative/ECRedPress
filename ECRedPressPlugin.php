@@ -3,11 +3,12 @@
 Plugin Name: ECRedPress
 Plugin URI: https://ephemerecreative.ca
 Description: Redis-based WordPress caching plugin.
-Author: Raphaël Titsworth-Morin
+Author: éphémère creative
 Version: 0.1.0
 Network: True
 Author URI: http://ephemerecreative.ca
 License: GPL-2.0-or-later
+Text Domain: ecrp
 
 ECRedPress. A simple system to cache WordPress pages to Redis.
 Copyright (C) 2018  Raphaël Titsworth-Morin
@@ -31,14 +32,14 @@ require_once __DIR__."/plugin/ECRedPressHooks.php";
 require_once __DIR__."/plugin/ECRedPressAdmin.php";
 
 /**
- * @property ECRedPressHooks hookManager
- * @property ECRedPressAdmin adminManager
+ * @property ECRedPressHooks $hook_manager
+ * @property ECRedPressAdmin $admin_manager
  */
 class ECRedPressPlugin {
     public function __construct()
     {
-        $this->hookManager = new ECRedPressHooks();
-        $this->adminManager = new ECRedPressAdmin();
+        $this->hook_manager = new ECRedPressHooks();
+        $this->admin_manager = new ECRedPressAdmin();
     }
 }
 
