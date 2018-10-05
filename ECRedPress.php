@@ -113,14 +113,14 @@ class ECRedPress
         $cacheExp = getenv('ECRP_DEFAULT_EXPIRATION');
         $redis = $redisUrl ? parse_url($redisUrl) : [];
         $config = array_merge([
-            'REDIS_HOST' => isset($redis['host']) ? $redis['host'] : null,
-            'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
-            'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
-            'CACHE_QUERY' => getenv('ECRP_CACHE_QUERY') == 'true',
-            'CURRENT_URL' => $this->get_current_url(),
+            'REDIS_HOST'        => isset($redis['host']) ? $redis['host'] : null,
+            'REDIS_PORT'        => isset($redis['port']) ? $redis['port'] : null,
+            'REDIS_PASSWORD'    => isset($redis['pass']) ? $redis['pass'] : null,
+            'CACHE_QUERY'       => getenv('ECRP_CACHE_QUERY') == 'true',
+            'CURRENT_URL'       => $this->get_current_url(),
             'CACHEABLE_METHODS' => $this->get_cacheable_methods_from_env() ?: ['GET'],
-            'CACHE_EXPIRATION' => $cacheExp ? (int)($cacheExp) : (60 * 60),
-            'NOCACHE_REGEX' => [
+            'CACHE_EXPIRATION'  => $cacheExp ? (int)($cacheExp) : 900,
+            'NOCACHE_REGEX'     => [
                 '.*\/wp-admin\/.*',
                 '.*\/wp-login\.php$',
             ]
@@ -427,6 +427,10 @@ class ECRedPress
      */
     private function set_cache($content, $meta = [])
     {
+        $ttl = $this->get_config()['CACHE_EXPIRATION'];
+
+        $resolution = $ttl ? 'ex' : null;
+
         $meta = array_merge([
             'status' => 200,
             'headers' => [],
@@ -435,9 +439,9 @@ class ECRedPress
 
         ECRedPressLogger::get_logger()->engine->info("About to set cache for " . $meta['url']);
 
-        $this->client->set($this->get_page_key($meta['url']), $content);
-        $this->client->set($this->get_status_key($meta['url']), $meta['status']);
-        $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']));
+        $this->client->set($this->get_page_key($meta['url']), $content, $resolution, $ttl);
+        $this->client->set($this->get_status_key($meta['url']), $meta['status'], $resolution, $ttl);
+        $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']), $resolution, $ttl);
     }
 
     /**
