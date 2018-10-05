@@ -46,7 +46,7 @@ If you want to tweak things in code, you'll need to interact with the engine. Th
     - An array of string with HTTP methods, like GET or POST, which should be cached. Default is just GET.
 - `CACHE_EXPIRATION` 
     - *Int*
-    - An integer specifying how long a page should remain in the cache. Default is one hour.
+    - An integer specifying how long a page should remain in the cache. Default is 15 minutes.
 - `NOCACHE_REGEX` 
     - *String Array*
     - An array with regular expressions applied to urls that should _not_ be cached.
