@@ -447,6 +447,14 @@ class ECRedPress
      */
     public function delete_cache($url = null)
     {
+        if (!$url) {
+            $url = $this->get_config()['CURRENT_URL'];
+        }
+
+        $url = str_replace("?ecrpd=true&", "?", $url);
+        $url = str_replace("?ecrpd=true", "", $url);
+        $url = str_replace("&ecrpd=true", "", $url);
+
         ECRedPressLogger::get_logger()->engine->info($url." has cache? ".(!!$this->get_page_cache($url)));
         ECRedPressLogger::get_logger()->engine->info("About to delete cache: ".$url);
         $this->set_ecrp_header("Deleted", "Delete");
