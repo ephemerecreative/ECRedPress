@@ -28,19 +28,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-require_once __DIR__."/plugin/ECRedPressHooks.php";
-require_once __DIR__."/plugin/ECRedPressAdmin.php";
+require_once __DIR__ . "/plugin/ECRPHooks.php";
+require_once __DIR__ . "/plugin/ECRPAdmin.php";
 
 /**
- * @property ECRedPressHooks $hook_manager
- * @property ECRedPressAdmin $admin_manager
+ * @property ECRPHooks $hook_manager
+ * @property ECRPAdmin $admin_manager
  */
-class ECRedPressPlugin {
+class ECRPPlugin {
     public function __construct()
     {
-        $this->hook_manager = new ECRedPressHooks();
-        $this->admin_manager = new ECRedPressAdmin();
+        $this->hook_manager = new ECRPHooks();
+        $this->admin_manager = new ECRPAdmin();
     }
 }
 
-new ECRedPressPlugin();
+new ECRPPlugin();

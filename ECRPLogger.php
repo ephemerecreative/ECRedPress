@@ -7,7 +7,7 @@ use Monolog\Logger;
  * @property Logger engine
  * @property Logger plugin
  */
-class ECRedPressLogger {
+class ECRPLogger {
     private static $instance = null;
 
     private function __construct()
@@ -18,9 +18,9 @@ class ECRedPressLogger {
 
     public static function get_logger()
     {
-        return self::$instance ? self::$instance : new ECRedPressLogger();
+        return self::$instance ? self::$instance : new ECRPLogger();
     }
 }
 
-$ecrpLogger = ECRedPressLogger::get_logger();
+$ecrpLogger = ECRPLogger::get_logger();
 

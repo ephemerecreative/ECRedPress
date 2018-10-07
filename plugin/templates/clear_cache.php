@@ -3,7 +3,7 @@
 <h4><?php echo __("The following urls were cleared", "ecrp"); ?></h4>
 
 <ul>
-    <?php foreach ($permalinks as $permalink): ?>
-        <li><?php echo $permalink ?></li>
+    <?php foreach ($to_delete as $url => $value): ?>
+        <li><a target="_blank" href="<?php echo $url ?>"><?php echo $url ?></a></li>
     <?php endforeach; ?>
 </ul>

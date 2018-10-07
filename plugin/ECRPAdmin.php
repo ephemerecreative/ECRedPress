@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . "/ECRedPressAdminHandlers.php";
+require_once __DIR__ . "/ECRPAdminHandlers.php";
 
-class ECRedPressAdmin
+class ECRPAdmin
 {
     public function __construct()
     {
@@ -16,7 +16,7 @@ class ECRedPressAdmin
     private function prep_admin_main()
     {
         add_action("admin_menu", function () {
-            add_menu_page('ECRedPress', 'ECRedPress', 'manage_options', 'ecrp', 'ECRedPressAdminHandlers::admin_main');
+            add_menu_page('ECRedPress', 'ECRedPress', 'manage_options', 'ecrp', 'ECRPAdminHandlers::admin_main');
         });
     }
 
@@ -24,7 +24,7 @@ class ECRedPressAdmin
     {
 
         add_action("admin_menu", function () {
-            add_submenu_page("ecrp", "Clear Cache", "Clear Cache", "edit_pages", "ecrp-clear-cache", "ECRedPressAdminHandlers::clear_cache");
+            add_submenu_page("ecrp", "Clear Cache", "Clear Cache", "edit_pages", "ecrp-clear-cache", "ECRPAdminHandlers::clear_cache");
         });
     }
 

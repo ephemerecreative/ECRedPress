@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . "/vendor/autoload.php";
-require_once __DIR__ . "/ECRedPressException.php";
-require_once __DIR__ . "/ECRedPressLogger.php";
+require_once __DIR__ . "/ECRPException.php";
+require_once __DIR__ . "/ECRPLogger.php";
 
 /**
  * Class ECRedPress
@@ -20,9 +20,9 @@ class ECRedPress
      */
     private $client;
     /**
-     * @var array $customConfig The configuration overrides provided by other code.
+     * @var array $custom_config The configuration overrides provided by other code.
      */
-    private $customConfig = [];
+    private $custom_config = [];
     /**
      * @var null|ECRedPress $instance The active ECRP instance.
      */
@@ -36,21 +36,55 @@ class ECRedPress
     private function __construct($config)
     {
         if ($config)
-            $this->customConfig = $config;
+            $this->custom_config = $config;
         self::$instance = $this;
         $this->init();
     }
 
     /**
      * Return this and set config.
-     * @param array $customConfig
+     * @param array $custom_config
      * @return $this
      */
-    private function get_and_set_config($customConfig = null)
+    public function set_config($custom_config)
     {
-        if ($customConfig !== null)
-            $this->customConfig = $customConfig;
+        if (is_array($custom_config))
+            $this->custom_config = array_merge($this->custom_config, $custom_config);
         return $this;
+    }
+
+    /**
+     * @param $option
+     * @param $value
+     * @throws ECRedPressException
+     */
+    public function set_config_option(string $option, $value)
+    {
+        if (!isset($option) || !isset($value)) {
+            throw new ECRedPressBadConfigException();
+        }
+        $this->custom_config[$option] = $value;
+    }
+
+    /**
+     * @param $option
+     * @return mixed
+     * @throws ECRedPressException
+     */
+    public function get_config_option(string $option)
+    {
+        return $this->get_config()[$option];
+    }
+
+    /**
+     * Set expiration time for this object.
+     * @param int $seconds
+     * @throws ECRedPressException
+     */
+    public function set_cache_expiration(int $seconds)
+    {
+        ECRPLogger::get_logger()->engine->info("Setting cache expiration to: " . $seconds);
+        $this->set_config_option('CACHE_EXPIRATION', $seconds);
     }
 
     /**
@@ -58,9 +92,9 @@ class ECRedPress
      * @return array
      * @throws ECRedPressRedisParamsException
      */
-    public function public_config()
+    public function get_config()
     {
-        return $this->get_config();
+        return $this->_config();
     }
 
     /**
@@ -72,7 +106,7 @@ class ECRedPress
     public static function get_ecrp($customConfig = null)
     {
         if (self::$instance != null) {
-            return self::$instance->get_and_set_config($customConfig);
+            return self::$instance->set_config($customConfig);
         } else {
             return new ECRedPress($customConfig);
         }
@@ -88,43 +122,24 @@ class ECRedPress
     }
 
     /**
-     * Get array of comma-separated cacheable HTTP methods from ECRP_CACHEABLE_METHODS and return them as an array.
-     * @return array
-     */
-    private function get_cacheable_methods_from_env()
-    {
-        $methods = getenv('ECRP_CACHEABLE_METHODS');
-        if (!$methods)
-            return [];
-        else
-            return array_map(function ($method) {
-                return trim(strtoupper($method));
-            }, explode(',', $methods));
-    }
-
-    /**
      * @param array $override
      * @return array
      * @throws ECRedPressRedisParamsException
      */
-    private function get_config($override = [])
+    private function _config($override = [])
     {
         $redisUrl = getenv('ECRP_REDIS_URL');
-        $cacheExp = getenv('ECRP_DEFAULT_EXPIRATION');
         $redis = $redisUrl ? parse_url($redisUrl) : [];
         $config = array_merge([
-            'REDIS_HOST'        => isset($redis['host']) ? $redis['host'] : null,
-            'REDIS_PORT'        => isset($redis['port']) ? $redis['port'] : null,
-            'REDIS_PASSWORD'    => isset($redis['pass']) ? $redis['pass'] : null,
-            'CACHE_QUERY'       => getenv('ECRP_CACHE_QUERY') == 'true',
-            'CURRENT_URL'       => $this->get_current_url(),
-            'CACHEABLE_METHODS' => $this->get_cacheable_methods_from_env() ?: ['GET'],
-            'CACHE_EXPIRATION'  => $cacheExp ? (int)($cacheExp) : 900,
-            'NOCACHE_REGEX'     => [
-                '.*\/wp-admin\/.*',
-                '.*\/wp-login\.php$',
-            ]
-        ], $this->customConfig, $override);
+            'REDIS_HOST' => isset($redis['host']) ? $redis['host'] : null,
+            'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
+            'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
+            'CACHE_QUERY' => $this->_config_build_cache_query(),
+            'CURRENT_URL' => $this->_config_build_current_url($this->_config_build_cache_query()),
+            'CACHEABLE_METHODS' => $this->_config_build_cacheable_methods(),
+            'CACHE_EXPIRATION' => $this->_config_build_cache_expiration(),
+            'NOCACHE_REGEX' => $this->_config_build_nocache_regex()
+        ], $this->custom_config, $override);
 
         if (!$config['REDIS_HOST'] || !$config['REDIS_PORT']) {
             throw new ECRedPressRedisParamsException();
@@ -140,11 +155,11 @@ class ECRedPress
     private function init_client()
     {
         $config = [
-            'host' => $this->get_config()['REDIS_HOST'],
-            'port' => $this->get_config()['REDIS_PORT'],
+            'host' => $this->_config()['REDIS_HOST'],
+            'port' => $this->_config()['REDIS_PORT'],
         ];
-        if (isset($this->get_config()['REDIS_PASSWORD']))
-            $config['password'] = $this->get_config()['REDIS_PASSWORD'];
+        if (isset($this->_config()['REDIS_PASSWORD']))
+            $config['password'] = $this->_config()['REDIS_PASSWORD'];
 
         $this->client = new Predis\Client($config);
     }
@@ -171,7 +186,7 @@ class ECRedPress
      * Is the cache enabled.
      * @return array|false|string
      */
-    private function is_cache_enabled()
+    public function is_cache_enabled()
     {
         return !!getenv('ECRP_ENABLED');
     }
@@ -192,7 +207,7 @@ class ECRedPress
      */
     private function is_cacheable_method()
     {
-        return in_array($_SERVER['REQUEST_METHOD'], $this->get_config()['CACHEABLE_METHODS']);
+        return in_array($_SERVER['REQUEST_METHOD'], $this->_config()['CACHEABLE_METHODS']);
     }
 
     /**
@@ -202,7 +217,7 @@ class ECRedPress
      */
     public function is_cacheable_url()
     {
-        $config = $this->get_config();
+        $config = $this->_config();
         print_r($config);
         foreach ($config['NOCACHE_REGEX'] as $pattern) {
             if (preg_match("/$pattern/", $config['CURRENT_URL'])) {
@@ -221,24 +236,113 @@ class ECRedPress
     private function get_url_key($url = null)
     {
         if (!$url) {
-            $url = $this->get_config()['CURRENT_URL'];
+            $url = $this->_config()['CURRENT_URL'];
         }
         $url = $this->should_cache_query() ? strtok($url, '?') : $url;
         return md5($url);
     }
 
     /**
-     * Builds the current url.
+     * Builds the current url for config.
      * @return string
      */
-    private function get_current_url()
+    private function _config_build_current_url($cache_query_string)
     {
-        return sprintf(
+        $url = sprintf(
             "%s://%s%s",
             $this->get_protocol(),
             $_SERVER['HTTP_HOST'],
             $_SERVER['REQUEST_URI']
         );
+        return $cache_query_string ? $url : strtok($url, "?");
+    }
+
+    /**
+     * Return cacheable methods to config.
+     * Defaults to ['GET']
+     * @return array
+     */
+    private function _config_build_cacheable_methods()
+    {
+        $methods = null;
+
+        if (getenv('ECRP_CACHEABLE_METHODS')) {
+            $methods = array_map(function ($method) {
+                return trim(strtoupper($method));
+            }, explode(',', $methods));
+        }
+
+        if (defined('ECRP_CACHEABLE_METHODS')) {
+            $methods = ECRP_CACHEABLE_METHODS;
+        }
+
+        return $methods ?: ['GET'];
+    }
+
+    /**
+     * Build cache expiration time for config.
+     * Defaults to 900 seconds.
+     * @return int
+     */
+    private function _config_build_cache_expiration()
+    {
+        $cacheExp = null;
+
+        if (getenv('ECRP_DEFAULT_EXPIRATION')) {
+            $cacheExp = (int)(getenv('ECRP_DEFAULT_EXPIRATION'));
+        }
+
+        if (defined('ECRP_DEFAULT_EXPIRATION')) {
+            $cacheExp = ECRP_DEFAULT_EXPIRATION;
+        }
+
+        return $cacheExp ?: 900;
+    }
+
+    /**
+     * Build cache query setting for config. (whether or not query strings are cached)
+     * Defaults to false.
+     * @return bool
+     */
+    private function _config_build_cache_query()
+    {
+        $cache_query = null;
+
+        if (getenv('ECRP_CACHE_QUERY')) {
+            $cache_query = getenv('ECRP_CACHE_QUERY') == 'true';
+        }
+
+        if (defined('ECRP_CACHE_QUERY')) {
+            $cache_query = ECRP_CACHE_QUERY;
+        }
+
+        return $cache_query ?: false;
+    }
+
+    /**
+     * Build the list of regexes defining things not to cache.
+     * Defaults to [
+     *      '.*\/wp-admin\/.*',
+     *      '.*\/wp-login\.php$',
+     * ]
+     * @return array
+     */
+    private function _config_build_nocache_regex()
+    {
+        $regexes = [
+            '.*\/wp-admin\/.*',
+            '.*\/wp-login\.php$',
+        ];
+
+        if (getenv('ECRP_NOCACHE_REGEX')) {
+            array_merge($regexes, str_split(getenv('ECRP_CACHE_QUERY'), "@@@"));
+        }
+
+        if (defined('ECRP_NOCACHE_REGEX')) {
+            array_merge($regexes, ECRP_NOCACHE_REGEX);
+        }
+
+        return $regexes;
     }
 
     /**
@@ -305,7 +409,7 @@ class ECRedPress
      */
     private function should_cache_query()
     {
-        return $this->get_config()['CACHE_QUERY'];
+        return $this->_config()['CACHE_QUERY'];
     }
 
     /**
@@ -315,20 +419,20 @@ class ECRedPress
      * @return bool
      * @throws ECRedPressRedisParamsException
      */
-    private function should_skip_cache()
+    public function should_skip_cache()
     {
         $nocacheSet = isset($_GET['NOCACHE']);
-        ECRedPressLogger::get_logger()->engine->info("NOCACHE get var: " . $nocacheSet);
+        ECRPLogger::get_logger()->engine->info("NOCACHE get var: " . $nocacheSet);
         $skip = ($nocacheSet or $this->is_comment_submission());
-        ECRedPressLogger::get_logger()->engine->info("Comment: " . $skip);
+        ECRPLogger::get_logger()->engine->info("Comment: " . $skip);
         $skip = ($skip or !$this->is_cacheable_method());
-        ECRedPressLogger::get_logger()->engine->info("Not cacheable method: " . $skip);
+        ECRPLogger::get_logger()->engine->info("Not cacheable method: " . $skip);
         $skip = ($skip or $this->is_logged_in());
-        ECRedPressLogger::get_logger()->engine->info("Logged in: " . $skip);
+        ECRPLogger::get_logger()->engine->info("Logged in: " . $skip);
         $skip = ($skip or defined('DONOTCACHEPAGE'));
-        ECRedPressLogger::get_logger()->engine->info("DONOTCACHEPAGE set: " . $skip);
+        ECRPLogger::get_logger()->engine->info("DONOTCACHEPAGE set: " . $skip);
         $skip = ($skip or $this->is_cli());
-        ECRedPressLogger::get_logger()->engine->info("Is CLI: " . $skip);
+        ECRPLogger::get_logger()->engine->info("Is CLI: " . $skip);
 
         return $skip;
     }
@@ -427,21 +531,37 @@ class ECRedPress
      */
     private function set_cache($content, $meta = [])
     {
-        $ttl = $this->get_config()['CACHE_EXPIRATION'];
+        $ttl = $this->_config()['CACHE_EXPIRATION'];
+
+        $ttl = $ttl === 0 ? null : $ttl;
 
         $resolution = $ttl ? 'ex' : null;
 
         $meta = array_merge([
             'status' => 200,
             'headers' => [],
-            'url' => $this->get_config()['CURRENT_URL'],
+            'url' => $this->_config()['CURRENT_URL'],
         ], $meta);
 
-        ECRedPressLogger::get_logger()->engine->info("About to set cache for " . $meta['url']);
+        ECRPLogger::get_logger()->engine->info("About to set cache for " . $meta['url']);
 
-        $this->client->set($this->get_page_key($meta['url']), $content, $resolution, $ttl);
-        $this->client->set($this->get_status_key($meta['url']), $meta['status'], $resolution, $ttl);
-        $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']), $resolution, $ttl);
+        $this->set_ecrp_header(date(DateTime::ISO8601), 'Generated');
+
+        ECRPLogger::get_logger()->engine->warning("Cache exp settings: " . print_r([
+//            $content,
+                $resolution,
+                $ttl,
+            ], true));
+
+        if ($resolution === null) {
+            $this->client->set($this->get_page_key($meta['url']), $content);
+            $this->client->set($this->get_status_key($meta['url']), $meta['status']);
+            $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']));
+        } else {
+            $this->client->set($this->get_page_key($meta['url']), $content, $resolution, $ttl);
+            $this->client->set($this->get_status_key($meta['url']), $meta['status'], $resolution, $ttl);
+            $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']), $resolution, $ttl);
+        }
     }
 
     /**
@@ -452,15 +572,15 @@ class ECRedPress
     public function delete_cache($url = null)
     {
         if (!$url) {
-            $url = $this->get_config()['CURRENT_URL'];
+            $url = $this->_config()['CURRENT_URL'];
         }
 
         $url = str_replace("?ecrpd=true&", "?", $url);
         $url = str_replace("?ecrpd=true", "", $url);
         $url = str_replace("&ecrpd=true", "", $url);
 
-        ECRedPressLogger::get_logger()->engine->info($url." has cache? ".(!!$this->get_page_cache($url)));
-        ECRedPressLogger::get_logger()->engine->info("About to delete cache: ".$url);
+        ECRPLogger::get_logger()->engine->info($url . " has cache? " . (!!$this->get_page_cache($url)));
+        ECRPLogger::get_logger()->engine->info("About to delete cache: " . $url);
         $this->set_ecrp_header("Deleted", "Delete");
         $this->client->del([
             $this->get_page_key($url),
@@ -475,7 +595,7 @@ class ECRedPress
      */
     private function render_from_cache()
     {
-        ECRedPressLogger::get_logger()->engine->info("About to fetch cache and render.");
+        ECRPLogger::get_logger()->engine->info("About to fetch cache and render.");
 
         $cache = $this->get_cache();
 
