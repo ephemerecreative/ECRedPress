@@ -201,6 +201,15 @@ class ECRedPress
     }
 
     /**
+     * Check if request is a comment submission.
+     * @return bool
+     */
+    private function is_refresh()
+    {
+        return (isset($_SERVER['HTTP_CACHE_CONTROL']) && $_SERVER['HTTP_CACHE_CONTROL'] == 'no-cache');
+    }
+
+    /**
      * Check if the request method is of a type we want to cache.
      * @return bool
      * @throws ECRedPressRedisParamsException
@@ -425,6 +434,8 @@ class ECRedPress
         ECRPLogger::get_logger()->engine->info("NOCACHE get var: " . $nocacheSet);
         $skip = ($nocacheSet or $this->is_comment_submission());
         ECRPLogger::get_logger()->engine->info("Comment: " . $skip);
+        $skip = ($skip or $this->is_refresh());
+        ECRPLogger::get_logger()->engine->info("Refresh: " . $skip);
         $skip = ($skip or !$this->is_cacheable_method());
         ECRPLogger::get_logger()->engine->info("Not cacheable method: " . $skip);
         $skip = ($skip or $this->is_logged_in());

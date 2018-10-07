@@ -20,7 +20,7 @@ services:
     - "8000:80"
     volumes:
     - .:/var/www/html/wp-content/plugins/ECRedPress
-    - ./sample-index.php:/var/www/html/index.php
+#    - ./sample-index.php:/var/www/html/index.php
     restart: always
     environment:
       WORDPRESS_DB_HOST: db:3306

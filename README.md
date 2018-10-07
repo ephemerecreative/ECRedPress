@@ -11,7 +11,11 @@ http://www.jeedo.net/lightning-fast-wordpress-with-nginx-redis/
 
 ## Testing
 
+You can test ECRP pretty easily with the included docker-compose config.
 
+To get started, simply run `docker-compose up`. That should get a standard WordPress environment up and running. You can then go through the installation steps to get your WP install up to speed.
+
+Then, you'll want to get ECRP installed. 
 
 ## Installation
 
