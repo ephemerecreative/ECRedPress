@@ -7,8 +7,9 @@ class ECRPAdminHandlers
 {
     /**
      * Renders the main admin page.
+     * @throws ECRedPressRedisParamsException
      */
-    public function admin_main()
+    public static function admin_main()
     {
         $ecrp = ECRedPress::get_ecrp();
         $cached_urls = get_option(ECRPOptions::get_cached_urls_key(), []);
@@ -19,7 +20,7 @@ class ECRPAdminHandlers
      * Clears the site cache.
      * @throws ECRedPressRedisParamsException
      */
-    public function clear_cache()
+    public static function clear_cache()
     {
         $ecrp = ECRedPress::get_ecrp();
         $logger = ECRPLogger::get_logger();
