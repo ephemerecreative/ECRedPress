@@ -662,12 +662,17 @@ class ECRedPress
         $html = ob_get_contents();
         ob_end_clean();
 
-        if (!$this->should_skip_cache())
+        if (!$this->should_skip_cache()) {
             $this->set_cache($html, [
                 'status' => http_response_code(),
                 'headers' => headers_list(),
             ]);
-        else
+        } elseif ($this->should_skip_cache() && !$this->is_logged_in()) {
+            $this->set_cache($html, [
+                'status' => http_response_code(),
+                'headers' => headers_list(),
+            ]);
+        } else
             $this->set_ecrp_header("Skipped");
 
         echo $html;
