@@ -42,12 +42,6 @@ class ECRPHooks
     {
         add_action('wp', function () {
             $ecrp = ECRedPress::get_ecrp();
-            $ecrp_enabled = $ecrp->is_cache_enabled();
-            $should_skip_cache = $ecrp->should_skip_cache();
-
-            if (!$ecrp_enabled || $should_skip_cache)
-                return;
-
             $ecrp->set_cache_expiration(ECRPHelpers::get_cache_exp());
         });
     }

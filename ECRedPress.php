@@ -83,7 +83,6 @@ class ECRedPress
      */
     public function set_cache_expiration(int $seconds)
     {
-        ECRPLogger::get_logger()->engine->info("Setting cache expiration to: " . $seconds);
         $this->set_config_option('CACHE_EXPIRATION', $seconds);
     }
 
@@ -134,8 +133,7 @@ class ECRedPress
             'REDIS_HOST' => isset($redis['host']) ? $redis['host'] : null,
             'REDIS_PORT' => isset($redis['port']) ? $redis['port'] : null,
             'REDIS_PASSWORD' => isset($redis['pass']) ? $redis['pass'] : null,
-            'CACHE_QUERY' => $this->_config_build_cache_query(),
-            'CURRENT_URL' => $this->_config_build_current_url($this->_config_build_cache_query()),
+            'CURRENT_URL' => $this->_config_build_current_url(),
             'CACHEABLE_METHODS' => $this->_config_build_cacheable_methods(),
             'CACHE_EXPIRATION' => $this->_config_build_cache_expiration(),
             'NOCACHE_REGEX' => $this->_config_build_nocache_regex()
@@ -237,7 +235,7 @@ class ECRedPress
     }
 
     /**
-     * Get the base key for a given url. Takes into account whether or not we are caching based on query string.
+     * Get the base key for a given url.
      * @param null $url
      * @return string
      * @throws ECRedPressRedisParamsException
@@ -247,7 +245,7 @@ class ECRedPress
         if (!$url) {
             $url = $this->_config()['CURRENT_URL'];
         }
-        $url = $this->should_cache_query() ? strtok($url, '?') : $url;
+
         return md5($url);
     }
 
@@ -255,15 +253,14 @@ class ECRedPress
      * Builds the current url for config.
      * @return string
      */
-    private function _config_build_current_url($cache_query_string)
+    private function _config_build_current_url()
     {
-        $url = sprintf(
+        return sprintf(
             "%s://%s%s",
             $this->get_protocol(),
             $_SERVER['HTTP_HOST'],
             $_SERVER['REQUEST_URI']
         );
-        return $cache_query_string ? $url : strtok($url, "?");
     }
 
     /**
@@ -309,26 +306,6 @@ class ECRedPress
     }
 
     /**
-     * Build cache query setting for config. (whether or not query strings are cached)
-     * Defaults to false.
-     * @return bool
-     */
-    private function _config_build_cache_query()
-    {
-        $cache_query = null;
-
-        if (getenv('ECRP_CACHE_QUERY')) {
-            $cache_query = getenv('ECRP_CACHE_QUERY') == 'true';
-        }
-
-        if (defined('ECRP_CACHE_QUERY')) {
-            $cache_query = ECRP_CACHE_QUERY;
-        }
-
-        return $cache_query ?: false;
-    }
-
-    /**
      * Build the list of regexes defining things not to cache.
      * Defaults to [
      *      '.*\/wp-admin\/.*',
@@ -344,7 +321,7 @@ class ECRedPress
         ];
 
         if (getenv('ECRP_NOCACHE_REGEX')) {
-            array_merge($regexes, str_split(getenv('ECRP_CACHE_QUERY'), "@@@"));
+            array_merge($regexes, str_split(getenv('ECRP_NOCACHE_REGEX'), "@@@"));
         }
 
         if (defined('ECRP_NOCACHE_REGEX')) {
@@ -412,16 +389,6 @@ class ECRedPress
     }
 
     /**
-     * Should we cache based on the query string.
-     * @return bool
-     * @throws ECRedPressRedisParamsException
-     */
-    private function should_cache_query()
-    {
-        return $this->_config()['CACHE_QUERY'];
-    }
-
-    /**
      * Check if we should skip the cache for:
      * - NOCACHE GET var
      * - Cache Control max-age=0
@@ -431,19 +398,12 @@ class ECRedPress
     public function should_skip_cache()
     {
         $nocacheSet = isset($_GET['NOCACHE']);
-        ECRPLogger::get_logger()->engine->info("NOCACHE get var: " . $nocacheSet);
         $skip = ($nocacheSet or $this->is_comment_submission());
-        ECRPLogger::get_logger()->engine->info("Comment: " . $skip);
         $skip = ($skip or $this->is_refresh());
-        ECRPLogger::get_logger()->engine->info("Refresh: " . $skip);
         $skip = ($skip or !$this->is_cacheable_method());
-        ECRPLogger::get_logger()->engine->info("Not cacheable method: " . $skip);
         $skip = ($skip or $this->is_logged_in());
-        ECRPLogger::get_logger()->engine->info("Logged in: " . $skip);
         $skip = ($skip or defined('DONOTCACHEPAGE'));
-        ECRPLogger::get_logger()->engine->info("DONOTCACHEPAGE set: " . $skip);
         $skip = ($skip or $this->is_cli());
-        ECRPLogger::get_logger()->engine->info("Is CLI: " . $skip);
 
         return $skip;
     }
@@ -463,6 +423,7 @@ class ECRedPress
      * Check if the page cache exists.
      * @return int
      * @throws ECRedPressRedisParamsException
+     * @throws ECRedPressException
      */
     private function does_page_cache_exist()
     {
@@ -524,6 +485,7 @@ class ECRedPress
      * @param null $url
      * @return array
      * @throws ECRedPressRedisParamsException
+     * @throws ECRedPressException
      */
     private function get_cache($url = null)
     {
@@ -554,21 +516,15 @@ class ECRedPress
             'url' => $this->_config()['CURRENT_URL'],
         ], $meta);
 
-        ECRPLogger::get_logger()->engine->info("About to set cache for " . $meta['url']);
-
         $this->set_ecrp_header(date(DateTime::ISO8601), 'Generated');
 
-        ECRPLogger::get_logger()->engine->warning("Cache exp settings: " . print_r([
-//            $content,
-                $resolution,
-                $ttl,
-            ], true));
-
         if ($resolution === null) {
+            $this->set_ecrp_header("Never", "expires");
             $this->client->set($this->get_page_key($meta['url']), $content);
             $this->client->set($this->get_status_key($meta['url']), $meta['status']);
             $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']));
         } else {
+            $this->set_ecrp_header("Seconds until expiry: " . $ttl, "expires");
             $this->client->set($this->get_page_key($meta['url']), $content, $resolution, $ttl);
             $this->client->set($this->get_status_key($meta['url']), $meta['status'], $resolution, $ttl);
             $this->client->set($this->get_headers_key($meta['url']), json_encode($meta['headers']), $resolution, $ttl);
@@ -590,8 +546,6 @@ class ECRedPress
         $url = str_replace("?ecrpd=true", "", $url);
         $url = str_replace("&ecrpd=true", "", $url);
 
-        ECRPLogger::get_logger()->engine->info($url . " has cache? " . (!!$this->get_page_cache($url)));
-        ECRPLogger::get_logger()->engine->info("About to delete cache: " . $url);
         $this->set_ecrp_header("Deleted", "Delete");
         $this->client->del([
             $this->get_page_key($url),
@@ -603,11 +557,10 @@ class ECRedPress
     /**
      * Render the page for the current request from the cache.
      * @throws ECRedPressRedisParamsException
+     * @throws ECRedPressException
      */
     private function render_from_cache()
     {
-        ECRPLogger::get_logger()->engine->info("About to fetch cache and render.");
-
         $cache = $this->get_cache();
 
         http_response_code($cache['status']);
@@ -628,6 +581,7 @@ class ECRedPress
     /**
      * Start the caching engine (basically begin output buffering).
      * @throws ECRedPressRedisParamsException
+     * @throws ECRedPressException
      */
     public function start_cache()
     {
@@ -674,6 +628,7 @@ class ECRedPress
             ]);
         } else
             $this->set_ecrp_header("Skipped");
+
 
         echo $html;
     }

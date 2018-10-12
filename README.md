@@ -33,7 +33,7 @@ If you want to tweak things in code, you'll need to interact with the engine. Th
 
 1. By passing a custom config array to `ECRedPress::get_ecrp`. 
 2. By using `ECRedPress->set_config` on the `ECRedPress` instance. This takes an associative array, just like `get_ecrp`. The array will be merged with any existing config, so you do not need to pass in every option.
-3. By using `ECRedPress->set_config_option` on the `ECRedPress` instance. Using this allows you to set a single option by name, rather than passing in an array: `$ecrp->set_config_option('CACHE_QUERY', true)`.
+3. By using `ECRedPress->set_config_option` on the `ECRedPress` instance. Using this allows you to set a single option by name, rather than passing in an array: `$ecrp->set_config_option('CACHE_EXPIRATION', 360)`.
 
 The full custom config options are listed below:
 
@@ -46,9 +46,6 @@ The full custom config options are listed below:
 - `REDIS_PASSWORD`
     - *String*
     - Only available the first time `get_ecrp` is called.
-- `CACHE_QUERY` 
-    - *Bool*
-    - Determines whether or not to cache urls with different query strings separately. Default is false.
 - `CURRENT_URL` 
     - *String*
     - By default, this is loaded from the request. If, however, you need to interact with the engine as if it were loaded from a url that it isn't actually loaded from, then you can use this to tell the engine which url it should "pretend" to work from.
