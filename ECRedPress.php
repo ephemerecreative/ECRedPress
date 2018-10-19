@@ -339,8 +339,10 @@ class ECRedPress
     {
         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']))
             return $_SERVER['HTTP_X_FORWARDED_PROTO'];
-        else
-            return $_SERVER['HTTPS'] ? 'https' : 'http';
+        else if(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'])
+            return 'https';
+        
+        return 'http';
     }
 
     /**
