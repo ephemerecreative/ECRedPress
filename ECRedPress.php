@@ -613,6 +613,7 @@ class ECRedPress
      *
      * @param $buffer
      * @param $phase
+     * @return false|string
      * @throws ECRedPressRedisParamsException
      */
     public static function end_buffer($buffer, $phase){
@@ -629,9 +630,6 @@ class ECRedPress
      */
     public function end_cache()
     {
-        if (!$this->is_cache_enabled())
-            return;
-
         $html = ob_get_contents();
         ob_end_clean();
 
@@ -649,6 +647,6 @@ class ECRedPress
             $this->set_ecrp_header("Skipped");
 
 
-        echo $html;
+        return $html;
     }
 }
