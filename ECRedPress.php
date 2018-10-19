@@ -605,6 +605,10 @@ class ECRedPress
     }
 
     /**
+     * End the output buffering for the cache.
+     *
+     * With help from https://github.com/nextend
+     *
      * @param $buffer
      * @param $phase
      * @throws ECRedPressRedisParamsException
