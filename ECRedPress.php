@@ -595,13 +595,26 @@ class ECRedPress
             try {
                 $this->render_from_cache();
             } catch (Exception $e) {
-                error_log($e->getMessage());
-                ob_start();
+                ECRPLogger::get_logger()->engine->error($e->getMessage());
+                ob_start('ECRedPress::end_buffer');
             }
         } else {
-            ob_start();
+            ob_start('ECRedPress::end_buffer');
         }
 
+    }
+
+    /**
+     * @param $buffer
+     * @param $phase
+     * @throws ECRedPressRedisParamsException
+     */
+    public static function end_buffer($buffer, $phase){
+        if ($phase & PHP_OUTPUT_HANDLER_FINAL || $phase & PHP_OUTPUT_HANDLER_END) {
+            return self::get_ecrp()->end_cache($buffer);
+        }
+
+        return $buffer;
     }
 
     /**
