@@ -626,12 +626,14 @@ class ECRedPress
 
     /**
      * Complete output buffering and save the output to the cache.
+     * @param $html
+     * @return null
      * @throws ECRedPressRedisParamsException
      */
-    public function end_cache()
+    public function end_cache($html)
     {
-        $html = ob_get_contents();
-        ob_end_clean();
+        if (!$this->is_cache_enabled())
+            return null;
 
         if (!$this->should_skip_cache()) {
             $this->set_cache($html, [
